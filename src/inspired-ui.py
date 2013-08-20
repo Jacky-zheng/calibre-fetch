@@ -62,13 +62,13 @@ margin: 0px 22px 50px 0px;
     
 .post .post-frame {
 position: relative;
-border: solid 3px #000;
+
 border-bottom-width: 0px;
-height: auto;
+height: 480px;
 width: 320px;
-background-color: #000;
+
 }
-.post .post-frame img {
+.post .post-frame .post-img {
 margin: 0;
 padding: 0;
 max-width: 100%;
@@ -81,13 +81,17 @@ max-height: 100%;
     def process_articles(self, title, article, baseurl, into_dir='links'):
           res = ''
           diskpath = os.path.join(self.current_dir, into_dir)
-          html = "<html><head><title>" + title + "</title><style type='text/css'>"+self.extra_css+"</style></head><body><div class='posts'>"
-          for img in article:
+          '''
+          必须添加Elemnt 的 Class ,否则框架会自动添加
+          '''
+          html = "<html><head><title>" + title + "</title><style type='text/css'>" + self.extra_css + "</style></head><body><div class='posts'>"
+          for a in article:
               if self.show_progress:
                   print '.',
                   sys.stdout.flush()
               sys.stdout.flush()
-              html += "<div class='post'><div class='post-frame'><img src='" + img + "'></img></div>"
+#              self.log("article:"+str(a))
+              html += "<div class='post'><div class='post-frame'><img src='" + a['href'] + "' class='post-img'></img><span>"+a['tags']+"</span></div>"
               html += "</div>"
           html += "</div></body></html>"
           soup = BeautifulSoup(html)
@@ -137,48 +141,80 @@ class Inspired(BasicNewsRecipe):
     title = u'Inspired'
     auto_cleanup = True 
     m_tags = {}
-    max_pages=3
-    def parse_tag(self, tags, href):
+    m_apps = {}
+    max_pages = 300
+    def parse_tag(self, tags, href, itune):
         self.log("parse_tag:" + tags)
         for tag in tags.split("|"):
+            tag = tag.strip()
+            index = tag.find('app ')
             if len(tag) > 0:
-                if not self.m_tags.has_key(tag):
-                    self.m_tags[tag] = []      
-                self.m_tags[tag].append(href)
-    def parse_page_data(self,index):
-        if index>=self.max_pages:
+                if index > -1:
+                    if not self.m_apps.has_key(tag):
+                        self.m_apps[tag] = []
+                    self.m_apps[tag].append({'href':href, 'itune':itune, 'tags':tags})    
+                else:                        
+                    if not self.m_tags.has_key(tag):
+                        self.m_tags[tag] = []      
+                    self.m_tags[tag].append({'href':href, 'itune':itune, 'tags':tags})
+                    
+    def parse_page_data(self, index):
+        if index >= self.max_pages:
             return False
-        soup = self.index_to_soup(u'http://inspired-ui.com/page/'+str(index))
+        self.log("start parse article index"+str(index)) 
+        soup = self.index_to_soup(u'http://inspired-ui.com/page/' + str(index))
         self.title = soup.html.head.title.string.strip()
         maincontent = soup.find('section', {'class':'posts'})
         for link in maincontent.findAll('div', {'class':'post'}):
             image = link.find('img', {'id':'post-img'})
             tag = link.findAll('span')[0]
-            self.parse_tag(tag.string, image['src'])
+            a = link.find('div', {'class':'caption'}).findAll('a')
+            itune = ''
+            if len(a) > 0:
+                itune = a[0]['href']
+            if not tag.string:
+              self.log.debug("can not process:"+str(index)+" "+str(link))
+            else:  
+                self.parse_tag(tag.string, image['src'], itune)
        
-        pagination=soup.find('div',{'class':'pagination'})
+        pagination = soup.find('div', {'class':'pagination'})
         if not pagination:
             return False
-        return len(pagination.findAll('a'))>1 
+        if index==1:
+            return len(pagination.findAll('a')) ==1 
+        return len(pagination.findAll('a')) > 1 
                                  
     def parse_index(self):
         '''
         生成文章列表
         '''
-        running=True
-        index=1
+        running = True
+        index = 1
         while running:
-            running=self.parse_page_data(index)
-            index+=1
-        self.log("start generat article index")   
+            running = self.parse_page_data(index)
+            index += 1
+        self.log(self.m_tags)
+        self.log("start generat article index") 
+        self.log(self.m_apps)
+        removed = [] 
+        for tag in self.m_tags.keys():
+            if self.m_apps.has_key('app ' + tag):
+                removed.append(tag)
+        for tag in removed:
+            del self.m_tags[tag]        
         article_list = []
         for key in self.m_tags.keys():
-            a = {'title':key+'('+str(len(self.m_tags[key]))+')', 'url':key, 'description':key}
+            a = {'title':key + '(' + str(len(self.m_tags[key])) + ')', 'url':key, 'description':key}
             article_list.append(a)
-#            break 
         
-        self.log("end parse_index")    
-        return [('Inspired ui', article_list)]
+        app_list=[]
+        for key in self.m_apps.keys():
+            a = {'title':key + '(' + str(len(self.m_apps[key])) + ')', 'url':key, 'description':key}
+            app_list.append(a)
+        self.log("end parse_index")  
+        self.log(self.m_apps) 
+        self.log("app list:"+str(app_list)) 
+        return [('tags', article_list),('Applications:',app_list)]
     
     def fetch_article(self, url, dir, f, a, num_of_feeds):
         '''
@@ -201,11 +237,15 @@ class Inspired(BasicNewsRecipe):
         fetcher.show_progress = False
         fetcher.image_url_processor = self.image_url_processor
         self.log("start fetch article")
-        self.log("url:" + url)
+#        self.log("url:" + url)
 #        self.log("f:"+str(f))
 #        self.log("a:"+str(a))
 #        self.log("num:"+str(num_of_feeds))
-        res, path, failures = fetcher.start_fetch('http://inspired-ui.com/', url, self.m_tags[url]), fetcher.downloaded_paths, fetcher.failed_links
+        if f==0:
+            article=self.m_tags[url]
+        else:
+           article=self.m_apps[url]
+        res, path, failures = fetcher.start_fetch('http://inspired-ui.com/', url, article), fetcher.downloaded_paths, fetcher.failed_links
         if not res or not os.path.exists(res):
             msg = _('Could not fetch article.') + ' '
             if self.debug:

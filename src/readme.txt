@@ -1,10 +1,11 @@
 1.API:http://manual.calibre-ebook.com/news_recipe.html#calibre.web.feeds.news.BasicNewsRecipe.download
 2.https://github.com/JeffreyZhao/calibre-recipes/
 3.http://blog.zhaojie.me/2013/06/calibre-recipe-infoq.html
-4.Á÷³Ì£º
-a)»ñÈ¡ÒªÏÂÔØµÄÎÄÕÂÁĞ±í£¬Ã¿Ò»ÏîÒª°üÀ¨£¬url,title[description]
-b)µ÷ÓÃ RecursiveFetcher 
+4.æµç¨‹ï¼š
+a)è·å–è¦ä¸‹è½½çš„æ–‡ç« åˆ—è¡¨ï¼Œæ¯ä¸€é¡¹è¦åŒ…æ‹¬ï¼Œurl,titleï¼Œdescription(å¿…é¡»ï¼Œä¸ç„¶ä¼šæŠ¥é”™)
+b)è°ƒç”¨ RecursiveFetcher 
     fetch_start
     process_links
     process_images
     global.save_soup
+    

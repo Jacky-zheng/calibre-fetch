@@ -1,3 +1,4 @@
+#coding=utf-8
 '''
 Created on 2013-8-19
 
@@ -82,7 +83,7 @@ max-height: 100%;
           res = ''
           diskpath = os.path.join(self.current_dir, into_dir)
           '''
-          ±ØĞëÌí¼ÓElemnt µÄ Class ,·ñÔò¿ò¼Ü»á×Ô¶¯Ìí¼Ó
+          å¿…é¡»æ·»åŠ Elemnt çš„ Class ,å¦åˆ™æ¡†æ¶ä¼šè‡ªåŠ¨æ·»åŠ 
           '''
           html = "<html><head><title>" + title + "</title><style type='text/css'>" + self.extra_css + "</style></head><body><div class='posts'>"
           for a in article:
@@ -186,7 +187,7 @@ class Inspired(BasicNewsRecipe):
                                  
     def parse_index(self):
         '''
-        Éú³ÉÎÄÕÂÁĞ±í
+        ç”Ÿæˆæ–‡ç« åˆ—è¡¨
         '''
         running = True
         index = 1
@@ -218,7 +219,7 @@ class Inspired(BasicNewsRecipe):
     
     def fetch_article(self, url, dir, f, a, num_of_feeds):
         '''
-        Éú³ÉÎÄÕÂ
+        ç”Ÿæˆæ–‡ç« 
         '''
         br = self.browser
         if self.get_browser.im_func is BasicNewsRecipe.get_browser.im_func:
